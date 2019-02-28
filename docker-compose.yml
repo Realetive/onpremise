@@ -47,8 +47,9 @@ services:
 
   nginx:
     restart: unless-stopped
-    build:
-      context: ./nginx
+    image: nginx:1.15-alpine
+    # build:
+    #   context: ./nginx
     depends_on:
       - web
     ports:
