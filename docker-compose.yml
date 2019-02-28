@@ -69,7 +69,6 @@ services:
       - ./data/letsencrypt-www:/tmp/letsencrypt
     links:
       - nginx
-    env_file: env/letsencrypt
 
   web:
     <<: *defaults
