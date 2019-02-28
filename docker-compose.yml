@@ -45,31 +45,37 @@ services:
     volumes:
       - sentry-postgres:/var/lib/postgresql/data
 
-  nginx:
-    restart: unless-stopped
-    image: nginx:1.15-alpine
-    # build:
-    #   context: ./nginx
-    depends_on:
-      - web
-    ports:
-      - "0.0.0.0:80:80"
-      - "0.0.0.0:443:443"
+  server:
+    image: gordonchan/nginx-ssl-ghost
     volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./data/letsencrypt:/etc/letsencrypt
-      - ./data/letsencrypt-www:/tmp/letsencrypt
+      - certs:/etc/nginx/certs
+      - /tmp/letsencrypt/www:/tmp/letsencrypt/www
+    # links:
+    #   - app:ghost
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: unless-stopped
 
   letsencrypt:
-    restart: always
-    image: kvaps/letsencrypt-webroot
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - ./data/letsencrypt:/etc/letsencrypt
-      - ./data/letsencrypt-www:/tmp/letsencrypt
+    image: gordonchan/auto-letsencrypt
     links:
-      - nginx
+      - server
+    volumes:
+      - /var/log/letsencrypt/:/var/log/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/lib/letsencrypt:/var/lib/letsencrypt
+      - /tmp/letsencrypt/www:/tmp/letsencrypt/www
+      - certs:/etc/nginx/certs
+    environment:
+      - EMAIL=elliot@allsafe.com
+      - SERVER_CONTAINER=server
+      - WEBROOT_PATH=/tmp/letsencrypt/www
+      - CERTS_PATH=/etc/nginx/certs
+      - DOMAINS=e-corp-usa.com www.e-corp-usa.com
+      - CHECK_FREQ=7
+    restart: unless-stopped
 
   web:
     <<: *defaults
@@ -86,6 +92,7 @@ services:
 
 
 volumes:
+    certs:
     sentry-data:
       external: true
     sentry-postgres:
